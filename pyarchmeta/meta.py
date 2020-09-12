@@ -21,10 +21,12 @@ class MetaDataObject():
     LANGUAGES = GlobalConst.LANGUAGES
     so = StringOps()
     
-    def __init__(self, id_: int = None):
+    def __init__(self, id_: int = None, main_: str = ""):
         self.id_= id_
         for k,v in self.FIELDS.items():
             self.__setattr__(k, None)
+        if main_ != "":
+            self.set_attr(self._main_attr(), main_)
          
     def set_attr(self, attr: str, value_: any, lang: str = GlobalConst.LANGUAGES[0]) -> bool:
         """Set an attribute."""
@@ -51,7 +53,6 @@ class MetaDataObject():
         if isinstance(dict_, dict):
             result = True
             for key_,value_ in dict_.items():
-                print(key_,value_)
                 if not self.set_attr(key_,value_):
                     result = False
         else:
@@ -69,42 +70,50 @@ class MetaDataObject():
         """Give the object attributes as dictionary """
         dict_={}
         if lang == "":  
-            dict_ = self.__dict__
-        else: 
-            for key_, value_ in self.__dict__.items():
-                #print(key_, value_)
-                if isinstance(value_, dict):
-                    dict_[key_] = value_[lang]
-                    if dict_[key_] is None and fall_back:
-                        dict_[key_] = value_[self.LANGUAGES[0]]
-                if isinstance(value_,list):
-                    list_items_=[]
-                    for e in value_:
-                        if isinstance(e,dict):
-                            fields = [x for x in e.keys() if x in GlobalConst.CORE_FIELDS]
-                            #print("fields", fields, value_.keys())
-                            if len(fields)>0:
-                                if isinstance(e[fields[0]], dict):
-                                    if e[fields[0]][lang] is None and fall_back:
-                                        list_items_.append(e[fields[0]][self.LANGUAGES[0]])
-                                    else:
-                                        list_items_.append(e[fields[0]][lang])
-                                    
+            lang = self.LANGUAGES[0]
+        for key_, value_ in self.__dict__.items():
+            if isinstance(value_, MetaDataObject):
+                dict_[key_] = value_.to_json(lang, with_none, fall_back)
+            if isinstance(value_, dict):
+                dict_[key_] = value_[lang]
+                if dict_[key_] is None and fall_back:
+                    dict_[key_] = value_[self.LANGUAGES[0]]
+            if isinstance(value_,list):
+                list_items_=[]
+                for e in value_:
+                    if isinstance(e, MetaDataObject):    
+                        list_items_.append(e.get_main_value(lang))
+                    if isinstance(e,dict):
+                        fields = [x for x in e.keys() if x in GlobalConst.CORE_FIELDS]
+                        if len(fields)>0:
+                            if isinstance(e[fields[0]], dict):
+                                if e[fields[0]][lang] is None and fall_back:
+                                    list_items_.append(e[fields[0]][self.LANGUAGES[0]])
                                 else:
-                                    list_items_.append(e[fields[0]])
-                        else:
-                            list_items_.append(e)
-                    dict_[key_] = "|".join(list_items_)
-                if isinstance(value_,str):
-                    dict_[key_] = value_
-                if isinstance(value_,int):
-                    dict_[key_] = value_
+                                    list_items_.append(e[fields[0]][lang])
+                                
+                            else:
+                                list_items_.append(e[fields[0]])
+                    if isinstance(e,str):
+                        list_items_.append(e)
+                dict_[key_] = "|".join(list_items_)
+            if isinstance(value_,str):
+                dict_[key_] = value_
+            if isinstance(value_,int):
+                dict_[key_] = value_
         if with_none:
             return dict_.copy()
         else:
             return {k:v for k,v in dict_.items() if not v is None}
             
-    
+    def get_main_value(self, lang: str= GlobalConst.LANGUAGES[0]):
+        """Retrieve the main value of the object in the given language"""
+        dict_ = self.__dict__[self._main_attr()]
+        if isinstance(dict_, dict):
+            if dict_[lang] is None:
+                return dict_[self.LANGUAGES[0]]
+            else:
+                return dict_[lang]
     
     def read(self):
         """Read object information from database"""
@@ -120,7 +129,8 @@ class MetaDataObject():
 
     def to_str(self):
         """Give a formated object representation"""
-        return self.__str__()
+        json_ = self.to_json()
+        return json.dumps(json_, indent=2)
         
     def _walk(self, object_: any ) -> any:
         """BROKEN - Walk throught the object"""
@@ -144,6 +154,15 @@ class MetaDataObject():
         """Give CSV-String"""
         pass
 
+    def _main_attr(self) -> str:
+        """Get the main attribute"""
+        fields = set(GlobalConst.__dict__[self.so.to_underscore(type(self).__name__).upper() + "_FIELDS"].keys())
+        field = list(fields.intersection(GlobalConst.CORE_FIELDS))
+        if len(field)>0:
+            return field[0]
+        else:
+            return ""
+            
     def _set_attr_str_i18n(self,attr: str, value_: str, lang) -> bool:
         if lang.lower() not in self.LANGUAGES:
             return False
@@ -194,21 +213,34 @@ class MetaDataObject():
             list_ = self.__dict__[attr]        
         for e in value_:
             if isinstance(e, MetaDataObject):
-                list_.append(e.to_json())
+                list_.append(e)
             else:
                 type_ = self.FIELDS[attr].split(".")[1]
                 if type_ == "list":
                     list_.append(e)
                 else:
-                    json = self._get_object_to_json(type_, e)
-                    list_.append(json.copy())
+                    list_.append(self._sub_object_factory(type_,e))
         self.__setattr__(attr,list_.copy()) 
         return True
         
     def _set_attr_object(self, attr: str, value_: any, lang: str) -> bool:
-        dict_ = value_.to_json()
-        result = self._set_attr_dict(attr, dict_, lang)
+        result = self._set_attr_dict(attr, value_, lang)
         return result
+        
+    def _sub_object_factory(self, type_: str, main_, str="") -> bool:
+        """Create a sub object depending from type"""
+        if type_ == "access_point":
+            object_ = AccessPoint(None, main_)
+        if type_ == "term":
+            object_ = Term(None, main_)
+        if type_ == "information_object":
+            object_ = InformationObject(None, main_)
+        if type_ == "actor":
+            object_ = Actor(None, main_)
+        if type_ == "repository":
+            object_ = Repository(None, main_)
+        return object_
+        
     
     def _get_object_to_json(self, type_: str, value_: any) -> dict:
         fields = set(GlobalConst.__dict__[type_.upper() + "_FIELDS"].keys())
@@ -244,8 +276,8 @@ class InformationObject(MetaDataObject):
     def __init__(self, id_: int = None):
         """ initialize the instance """
         super().__init__()
-        print (type(self.LANGUAGES), self.LANGUAGES[0], 
-                GlobalConst.LANGUAGES, GlobalConst.SECRETS["MYSQLOPS"])
+        #print (type(self.LANGUAGES), self.LANGUAGES[0], 
+        #    GlobalConst.LANGUAGES, GlobalConst.SECRETS["MYSQLOPS"])
         self.id_ = id_
         pass
         
@@ -275,15 +307,18 @@ class Term(MetaDataObject):
     
     FIELDS = GlobalConst.TERM_FIELDS
     
-    def __init__(self, taxonomy: str = ""):
+    def __init__(self, main_: str = "",taxonomy: str = ""):
+        super().__init__()
         self.taxonomy = taxonomy
+        if main_ != "":
+            self.set_attr(self._main_attr(), main_)
     pass
 
 class Actor(MetaDataObject):
     """Manage the actor"""
     FIELDS = GlobalConst.ACTOR_FIELDS
     
-    def __init__(self, id_: int = None):
+    def __init__(self, id_: int = None, main_: str = ""):
         super().__init__()
 
 class Repository(MetaDataObject):
@@ -291,7 +326,7 @@ class Repository(MetaDataObject):
     
     FIELDS = GlobalConst.REPOSITORY_FIELDS
     
-    def __init__(self, id_: int = None):
+    def __init__(self, id_: int = None, main_: str = ""):
         super().__init__()
     
 
@@ -299,8 +334,11 @@ class AccessPoint(Term):
     """Manage an Access Point"""
     FIELDS = GlobalConst.ACCESS_POINT_FIELDS
     TYPES = GlobalConst.ACCESS_POINT_TYPES
-    def __init__(self, id_: int = None):
+    
+    def __init__(self, id_: int = None, main_: str = ""):
         super().__init__()
+        if main_ != "":
+            self.set_attr(self._main_attr(), main_)
         
        
   
@@ -342,7 +380,7 @@ class LevelOfDescription(Term):
     g= GlobalConst()
     LANGUAGES = g.LANGUAGES
         
-    def __init__(self, id_: int = None):
+    def __init__(self, id_: int = None, main_: str = ""):
         for e in self.LANGUAGES:
             self.__setattr__(e,None)
         
