@@ -1,9 +1,0 @@
-   {"MYSQLOPS" : {
-        "host":"localhost",
-        "user":"root",
-        "pass":"K0lonial",
-        "db":"atom"
-            
-    }
-    "APIKEYS" :{}
-    }

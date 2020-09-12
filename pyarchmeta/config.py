@@ -128,7 +128,7 @@ class GlobalConst():
     
 
     def __init__(self):
-        f = open("pyarchmeta/config","r")
+        f = open("pyarchmeta/config.json","r")
         dict_ = {}
         try:
             dict_ = json.load(f)
