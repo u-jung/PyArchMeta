@@ -244,7 +244,8 @@ class InformationObject(MetaDataObject):
     def __init__(self, id_: int = None):
         """ initialize the instance """
         super().__init__()
-        print (type(self.LANGUAGES), self.LANGUAGES[0], GlobalConst.LANGUAGES, GlobalConst.SECRETS["MYSQLOPS"])
+        print (type(self.LANGUAGES), self.LANGUAGES[0], 
+                GlobalConst.LANGUAGES, GlobalConst.SECRETS["MYSQLOPS"])
         self.id_ = id_
         pass
         
