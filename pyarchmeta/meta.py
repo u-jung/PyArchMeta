@@ -2,6 +2,7 @@ import json
 
 from pyarchmeta.helper import StringOps
 from pyarchmeta.config import GlobalConst
+from pyarchmeta import factory
 
 
 __all__ = [
@@ -21,12 +22,13 @@ class MetaDataObject():
     LANGUAGES = GlobalConst.LANGUAGES
     so = StringOps()
     
-    def __init__(self, id_: int = None, main_: str = ""):
+    def __init__(self, id_: int = None, default: str = ""):
         self.id_= id_
-        for k,v in self.FIELDS.items():
-            self.__setattr__(k, None)
-        if main_ != "":
-            self.set_attr(self._main_attr(), main_)
+        for key_,value_ in self.FIELDS.items():
+            self.__setattr__(key_, None)
+        if default != "":
+            self.set_attr(self._main_attr(), default)
+        #return self
          
     def set_attr(self, attr: str, value_: any, lang: str = GlobalConst.LANGUAGES[0]) -> bool:
         """Set an attribute."""
@@ -65,59 +67,98 @@ class MetaDataObject():
             return self.__getitem__(attr.lower())
         else:
             return None
-
-    def to_json(self, lang: str = "", with_none: bool = True, fall_back: bool = True) -> dict:
-        """Give the object attributes as dictionary """
-        dict_={}
-        if lang == "":  
-            lang = self.LANGUAGES[0]
-        for key_, value_ in self.__dict__.items():
-            if isinstance(value_, MetaDataObject):
-                dict_[key_] = value_.to_json(lang, with_none, fall_back)
-            if isinstance(value_, dict):
-                dict_[key_] = value_[lang]
-                if dict_[key_] is None and fall_back:
-                    dict_[key_] = value_[self.LANGUAGES[0]]
-            if isinstance(value_,list):
-                list_items_=[]
-                for e in value_:
-                    if isinstance(e, MetaDataObject):    
-                        list_items_.append(e.get_main_value(lang))
-                    if isinstance(e,dict):
-                        fields = [x for x in e.keys() if x in GlobalConst.CORE_FIELDS]
-                        if len(fields)>0:
-                            if isinstance(e[fields[0]], dict):
-                                if e[fields[0]][lang] is None and fall_back:
-                                    list_items_.append(e[fields[0]][self.LANGUAGES[0]])
-                                else:
-                                    list_items_.append(e[fields[0]][lang])
-                                
-                            else:
-                                list_items_.append(e[fields[0]])
-                    if isinstance(e,str):
-                        list_items_.append(e)
-                dict_[key_] = "|".join(list_items_)
-            if isinstance(value_,str):
-                dict_[key_] = value_
-            if isinstance(value_,int):
-                dict_[key_] = value_
-        if with_none:
-            return dict_.copy()
-        else:
-            return {k:v for k,v in dict_.items() if not v is None}
             
-    def get_main_value(self, lang: str= GlobalConst.LANGUAGES[0]):
+    def is_valid(self) -> bool:
+        """[DEFAULT] Check if all attr has value_ which is not None"""
+        if len([key_ for key_, value_ in self.__dict__.items() if value_ is None]) == 0:
+            return True
+        else:
+            return False
+    
+    def to_json(self, lang: str = "", with_none: bool = True, 
+            fall_back: bool = True, simplify: bool = False, *args, **kwargs) -> dict:
+        
+        """Give the object attributes as dictionary.
+        
+        Parameters:
+        lang – prefered language (all languages if lang = '')
+        with_none – if True attributes with None values will be given
+        fall_back – if True the value will give in the fall back language 
+                    if there is no value in prefered language
+        simplify – if True sub dicts will be give only the default string
+                     in the preferend language. This depass with_none.
+        """
+        dict_ = {}
+        
+        for key_,value_ in self.__dict__.items():
+            #print (type(value_), key_, value_)
+            if value_ is None:
+                if with_none:
+                    dict_[key_] = value_
+            if isinstance(value_, (str, int, float)) :
+                dict_[key_] = value_
+            if isinstance(value_,list):
+                list_ = []
+                for e in value_:
+                    if simplify and isinstance(e, MetaDataObject):
+                        list_.append(e.default(lang))
+                    else:
+                        list_.append(e.to_json(lang,with_none, fall_back, simplify))
+                if simplify:
+                    dict_[key_] = "|".join(list_)
+                else:
+                    dict_[key_] = list_.copy()
+            if isinstance(value_, dict):
+                if simplify and self._simplify(value_,lang):
+                    dict_[key_] = self._simplify(value_,lang)
+                else: 
+                    ddict_ = {}
+                    for dkey_, dvalue_ in value_.items():
+                        if isinstance(dvalue_,dict):
+                            if simplify:
+                                ddict_[dkey_] = self._simplify(dvalue_, lang)
+                            else:
+                                if lang == "":
+                                    if with_none:
+                                        ddict_[dkey_] = dvalue_.copy()
+                                    else:
+                                        ddict_[dkey_] = {k: v for k, v in dvalue_.items() if v is not None}
+                                else:
+                                    if dvalue_[lang] is None:
+                                        ddict_[dkey_] = dvalue_[self.LANGUAGES[0]]
+                                    else:
+                                        ddict_[dkey_] = dvalue_[lang]
+                        else:
+                            if with_none:
+                                ddict_[dkey_] = dvalue_
+                            else:
+                                if dvalue_ is not None:
+                                    ddict_[dkey_] = dvalue_
+                    if lang != "" and lang in value_:
+                        if lang in ddict_ and ddict_[lang] is not None:
+                            dict_[key_] = {lang: ddict_[lang]}
+                        else:
+                            dict_[key_] = {self.LANGUAGES[0]: ddict_[self.LANGUAGES[0]]}
+                    else:
+                        dict_[key_] = ddict_.copy()                        
+        return dict_.copy()
+
+            
+    def default(self, lang: str= GlobalConst.LANGUAGES[0]):
         """Retrieve the main value of the object in the given language"""
         dict_ = self.__dict__[self._main_attr()]
         if isinstance(dict_, dict):
-            if dict_[lang] is None:
-                return dict_[self.LANGUAGES[0]]
-            else:
-                return dict_[lang]
+            return self._simplify(dict_,lang)
+        else:
+            return dict_[lang]
     
     def read(self):
         """Read object information from database"""
         pass
+    
+    def data(self):
+        """Return the object dict"""
+        return self.__dict__
     
     def write(self):
         """Write object information from database"""
@@ -129,9 +170,65 @@ class MetaDataObject():
 
     def to_str(self):
         """Give a formated object representation"""
-        json_ = self.to_json()
+        json_ = str(self.__dict__)
         return json.dumps(json_, indent=2)
+    
+    def has_id(self):
+        """Check if the there is a not None attr id_"""
+        if self.id_ is not None:
+            return True
+        else:
+            return False
+    
+    def has_value(self,attr: str, value_: any, lang: str = "") -> any:
+        """Check if a given attr has a specific value"""
+        if lang == "":
+            lang = self.LANGUAGES[0]
+        result = False
+        if isinstance(self.__dict__[attr],MetaDataObject):
+            result =  self.__dict__[attr].has_value(self.__dict__[attr]._main_attr(),value_)
+            if result:
+                return self
+        if isinstance(self.__dict__[attr],(int, str, float)):
+            if self.__dict__[attr] == value_:
+                result = self
+        if isinstance(self.__dict__[attr],list):
+            for e in self.__dict__[attr]:
+                if isinstance(e,MetaDataObject):
+                    result =  e.has_value(e._main_attr(),value_)
+                    if result:
+                        return self
+                else:
+                    if e == value_:
+                        result = self
+        if isinstance(self.__dict__[attr],dict):
+            for k, v in self.__dict__[attr].items():
+                if isinstance(v, dict):
+                    if lang in v and v[lang] == value_:
+                        return self
+                else:
+                    if v == value_:
+                        return self
+        return False
+                    
+            
+    
+    
+    def generate_from(self, attr: str, json_out: bool) -> any:
+        """Generate items from specific attr"""
+        if isinstance(self.attr,(list,tuple)):
+            for e in self.__dict__[attr]:
+                if isinstance(e,MetaDataObject) and json_out:
+                    e=e.to_json()
+                yield e
+        if isinstance(self.attr, dict):
+            for key_, value_ in self.attr:
+                yield (k,v)
+        if isinstance(self.attr,(str,int,float)):
+            yield e
         
+        
+    
     def _walk(self, object_: any ) -> any:
         """BROKEN - Walk throught the object"""
         if isinstance(object_,InformationObject) and not isinstance(object_,str):
@@ -162,7 +259,22 @@ class MetaDataObject():
             return field[0]
         else:
             return ""
-            
+    
+    def _simplify(self, dict_: dict, lang: str="") -> str:
+        """Give the simple default value from a sub dict"""
+        if lang == "":
+            lang = self.LANGUAGES[0]
+        if lang in dict_:
+            if dict_[lang] is None:
+                return dict_[self.LANGUAGES[0]]
+            else:
+                return dict_[lang]
+        else:
+            if self._main_attr in dict:
+                return _simplify(dict_[self._main_attr], lang)
+            return None
+    
+    
     def _set_attr_str_i18n(self,attr: str, value_: str, lang) -> bool:
         if lang.lower() not in self.LANGUAGES:
             return False
@@ -259,10 +371,23 @@ class MetaDataObject():
         self.__dict__[name] = value
     
     def __repr__(self):
-        return str(self.__dict__)
+        print(self.to_json())
+        return str(self.to_json())
     
     def __str__(self):
-        return self.__class__.__name__ +"("+json.dumps(self.__dict__, indent=2)+")"
+        return self.__class__.__name__ +"("+json.dumps(self.to_json(), indent=2)+")"
+        
+    def __eval__(self, other: any) -> bool:
+        if self.__dict__ == other.__dict__:
+            return True
+        else:
+            return False
+            
+    def __ne__(self, other: any) -> bool:
+        if self.__dict__ == other.__dict__:
+            return False
+        else:
+            return True
 
 
 
@@ -273,13 +398,13 @@ class InformationObject(MetaDataObject):
   
     FIELDS = GlobalConst.INFORMATION_OBJECT_FIELDS
     
-    def __init__(self, id_: int = None):
+    def __init__(self, id_: int = None, default: str = ""):
         """ initialize the instance """
-        super().__init__()
+        super().__init__(id_, default)
         #print (type(self.LANGUAGES), self.LANGUAGES[0], 
         #    GlobalConst.LANGUAGES, GlobalConst.SECRETS["MYSQLOPS"])
         self.id_ = id_
-        pass
+        #return self
         
                 
     def _create_access_point_list(self, value_: any, lang) -> list:
@@ -307,7 +432,7 @@ class Term(MetaDataObject):
     
     FIELDS = GlobalConst.TERM_FIELDS
     
-    def __init__(self, main_: str = "",taxonomy: str = ""):
+    def __init__(self, main_: str = "",taxonomy: str = None):
         super().__init__()
         self.taxonomy = taxonomy
         if main_ != "":
@@ -406,193 +531,3 @@ class LevelOfDescription(Term):
             return False
 
 
-class Aggregation(list):
-    """Manage aggregation of MetaDataObjects"""
-    
-    def __init__(self):
-        self.list_ = []
-        self.i=0
-        
-    
-    def add(self, MetaDataObject: any, check_uniq: bool = True) -> bool:
-        """Add a MetaDataObject to the aggregation"""
-        dict_ = MetaDataObject.to_json()
-        return self.add_dict(dict_,check_uniq)
-    
-    def add_dict(self, dict_: dict, check_uniq: bool = True) -> bool:
-        """Add a json representation to the aggregation"""
-        if dict_["id_"] is None:
-            return False
-        if check_uniq:
-            if dict_["id_"] in [x["id_"] for x in self.list_]:
-                return False
-            else:
-                self.list_.append(dict_.copy())
-                return True
-        else:
-            self.list_.append(dict_.copy())
-            return True
-
-    def remove(self, MetaDataObject: any) -> list:
-        dict_ = MetaDataObject.to_json()
-        return self.remove_dict(dict_)
-    
-    def remove_dict(self, dict_: dict) -> list:
-        list_ = [x for x in self.list_ if x == dict_]
-        for e in list_:
-            self.list_.remove(e)
-        return e
-        
-    def remove_by_key(self, value_: any, key_: str = "id_", 
-                    lang: str = GlobalConst.LANGUAGES[0] ) -> list:
-        list_ = self.select_by_key(value_,key_, lang)
-        for e in list_:
-            self.list_.remove(e)
-        return list_
-    
-    def select_by_key(self, value_: any, key_: str = "id_", 
-                    lang: str = GlobalConst.LANGUAGES[0] ) -> list:
-        """Select a sub list of items which match a key value condition"""
-        return  [x for x in self.list_ 
-                    if x[key_]== value_ or self._is_in_lang(x[key_],value_,lang)]
-        
-    def to_json(self):
-        return self.list_
-          
-    def key_stat(self):
-        """Enumerate used keys in object list"""
-        dict_ = {}
-        for e in self.list_:
-            for k,v in e.items():
-                if k in dict_:
-                    dict_[k] += 1
-                else:
-                    dict_[k] = 1
-        return dict_
-
-    def append(self, value_: dict) -> bool:
-        """Add an element to the aggregation"""
-        if isinstance(value_, dict) and "id_" in value_:
-            self.list_.append(value_)
-            return True
-        return False
-        
-    def _is_in_lang(self, dict_: dict, search_value: str, lang: str) -> bool:
-        """Check if the language key of a sub dict match with a certain value"""
-        if isinstance(dict_, dict):
-            if lang in dict_:
-                if dict_[lang].strip() == search_value.strip():
-                    return True
-        elif isinstance(dict_, list):
-            return _is_in_lang_list(dict_, search_value, lang)
-        return False
-                    
-    def _is_in_lang_list(self, list_: list, search_value: str, lang: str) -> bool:
-        """Check if the list contains a dict which has a language key with the given value"""
-        for e in list_:
-            if self._is_in_lang(e, search_value, lang):
-                return True
-                
-    def __iter__(self):
-        self.i = 0
-        for i,e in enumerate(self.list_):
-            yield e
-    
-    def __next__(self):
-        if self.i < len(self.list_):
-            e = self.list_[self.i]
-            self.i += 1
-            return e
-        else:
-            raise StopIteration
-    
-    def __len__(self):
-        return len(self.list_)
-        
-
-    def __contains__(self, id_):
-        list_ = self.select_by_key(id_)
-        if len(list_) > 0:
-            return True
-        else:
-            return False
-    
-    def __delitem__(self, key_: int) -> bool:
-        if self._in_index(key_):
-            return self.list_.remove(key_)
-    
-    def __getitem__(self, key_: int) -> dict:
-        if self._in_index(key_):
-            return self.list_[key_]
-        return None
-    
-    def __setitem__(self, key_: int, value_: dict) -> bool:
-        if self._in_index(key_):
-            if isinstance(value_, dict) and "id_" in value_:
-                self.list_[key_] = value_.copy()
-                return True
-        return False
-    
-    def _in_index(self, key_: int) -> bool:
-        if isinstance(key_, int):
-            if key_ >-1 and key_ < len(self.list_):
-                return True
-        return False
-            
-    def __str__(self):
-        return self.__class__.__name__ +"("+json.dumps(self.list_, indent=2)+")"
-    
-class InformationObjectAggregation(Aggregation):
-    """Manage a list of InformationObject"""
-    
-    def __init__(self):
-        super().__init__()
-    
-    def is_parent(self,  other):
-        """Check if an item is the parent of another"""
-        return self["parent_id"] == other["legacy_id"]
-        
-    def __lt__(self, other):
-        return self["legacy_id"].__lt__(other)
-        
-    def __le__(self, other):
-        return self["legacy_id"].__le__(other)
-        
-    def __eq__(self, other):
-        return self["legacy_id"].__eq__(other)
-        
-    def __ne__(self, other):
-        return self["legacy_id"].__ne__(other)
-        
-    def __gt__(self, other):
-        return self["legacy_id"].__gt__(other)
-        
-    def __ge__(self, other):
-        return self["legacy_id"].__ge__(other)
-        
-    
-    
-
-class TermAggregation(Aggregation):
-    """Manage a list of Term"""
-    
-    def __init__(self):
-        super().__init__()
-
-class ActorAggregation(Aggregation):
-    """Manage a list of Actor"""
-    
-    def __init__(self):
-        super().__init__()
-
-class RepositoryAggregation(Aggregation):
-    """Manage a list of InformationObject"""
-    
-    def __init__(self):
-        super().__init__()
-
-class AccessPointAggregation(Aggregation):
-    """Manage a list of InformationObject"""
-    
-    def __init__(self):
-        super().__init__()
