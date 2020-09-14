@@ -21,14 +21,15 @@ class MetaDataObject():
 
     LANGUAGES = GlobalConst.LANGUAGES
     so = StringOps()
+    key_attribute = "id_"
     
-    def __init__(self, id_: int = None, default: str = ""):
+    def __init__(self, id_: int = None, default: str = "", lang: str = GlobalConst.LANGUAGES[0]):
         self.id_= id_
         for key_,value_ in self.FIELDS.items():
             self.__setattr__(key_, None)
         if default != "":
-            self.set_attr(self._main_attr(), default)
-        #return self
+            self.set_attr(self._main_attr(), default, lang)
+        
          
     def set_attr(self, attr: str, value_: any, lang: str = GlobalConst.LANGUAGES[0]) -> bool:
         """Set an attribute."""
@@ -138,7 +139,10 @@ class MetaDataObject():
                         if lang in ddict_ and ddict_[lang] is not None:
                             dict_[key_] = {lang: ddict_[lang]}
                         else:
-                            dict_[key_] = {self.LANGUAGES[0]: ddict_[self.LANGUAGES[0]]}
+                            if self.LANGUAGES[0] in ddict_:
+                                dict_[key_] = {self.LANGUAGES[0]: ddict_[self.LANGUAGES[0]]}
+                            else:
+                                dict_[key_] = {self.LANGUAGES[0]:""}
                     else:
                         dict_[key_] = ddict_.copy()                        
         return dict_.copy()
@@ -398,13 +402,10 @@ class InformationObject(MetaDataObject):
   
     FIELDS = GlobalConst.INFORMATION_OBJECT_FIELDS
     
-    def __init__(self, id_: int = None, default: str = ""):
+    def __init__(self, id_: int = None, default: str = "", lang: str = GlobalConst.LANGUAGES[0]):
         """ initialize the instance """
-        super().__init__(id_, default)
-        #print (type(self.LANGUAGES), self.LANGUAGES[0], 
-        #    GlobalConst.LANGUAGES, GlobalConst.SECRETS["MYSQLOPS"])
+        super().__init__(id_, default, lang)
         self.id_ = id_
-        #return self
         
                 
     def _create_access_point_list(self, value_: any, lang) -> list:
@@ -432,7 +433,7 @@ class Term(MetaDataObject):
     
     FIELDS = GlobalConst.TERM_FIELDS
     
-    def __init__(self, main_: str = "",taxonomy: str = None):
+    def __init__(self, main_: str = "",taxonomy: str = None, lang: str = GlobalConst.LANGUAGES[0]):
         super().__init__()
         self.taxonomy = taxonomy
         if main_ != "":
@@ -451,7 +452,7 @@ class Repository(MetaDataObject):
     
     FIELDS = GlobalConst.REPOSITORY_FIELDS
     
-    def __init__(self, id_: int = None, main_: str = ""):
+    def __init__(self, id_: int = None, main_: str = "",lang: str = GlobalConst.LANGUAGES[0]):
         super().__init__()
     
 
@@ -460,10 +461,8 @@ class AccessPoint(Term):
     FIELDS = GlobalConst.ACCESS_POINT_FIELDS
     TYPES = GlobalConst.ACCESS_POINT_TYPES
     
-    def __init__(self, id_: int = None, main_: str = ""):
+    def __init__(self, id_: int = None, main_: str = "", lang: str = GlobalConst.LANGUAGES[0]):
         super().__init__()
-        if main_ != "":
-            self.set_attr(self._main_attr(), main_)
         
        
   
@@ -505,29 +504,10 @@ class LevelOfDescription(Term):
     g= GlobalConst()
     LANGUAGES = g.LANGUAGES
         
-    def __init__(self, id_: int = None, main_: str = ""):
-        for e in self.LANGUAGES:
-            self.__setattr__(e,None)
-        
-    def __setattr__(self, name, value):
-        self.__dict__[name] = value
-    
-    def __repr__(self):
-        return str(self.__dict__)
-    
-    def __str__(self):
-        return self.__class__.__name__ +"("+json.dumps(self.__dict__, indent=2)+")"  
-        
-    def set_attr(self, attr: str, value_: any) -> bool:
-        """Set an attribute."""
-        attr = attr.lower()
-        if attr in self.__dict__:
-            if attr.lower() in self.LANGUAGES + ["wikidata"]:
-                self.__setattr__(attr.lower(), value_)
-            else:
-                return False
-            return True
-        else:
-            return False
+    def __init__(self, id_: int = None, main_: str = "", lang: str = GlobalConst.LANGUAGES[0]):
+        super().__init__()
+        self.taxonomy = "level_of_description"
+
+
 
 

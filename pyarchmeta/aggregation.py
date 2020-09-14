@@ -1,3 +1,5 @@
+import json
+
 from pyarchmeta import meta, factory
 from pyarchmeta.config import GlobalConst
 
@@ -16,7 +18,11 @@ class Aggregation(list):
                 self.list_.append(meta_data_object)
                 return True
             else:
-                return False
+                if self.duplicate_test(meta_data_object):
+                    return False
+                else:
+                    self.list_.append(meta_data_object)
+                    return True
         else:
             self.list_.append(meta_data_object)
             return True
@@ -50,32 +56,54 @@ class Aggregation(list):
         return  [x for x in self.list_ 
                     if x.has_value(key_,value_,lang)]
         
-    def to_json(self):
-        return [x.to_json() for x in self.list_]
+    def to_json(self, lang: str = "", with_none: bool = True, 
+            fall_back: bool = True, simplify: bool = False, *args, **kwargs):
+        return [x.to_json(lang = lang, with_none= with_none, fall_back= fall_back, simplify= simplify) for x in self.list_]
           
     def statistics(self):
         """count used keys in object list"""
         dict_ = {}
         for e in self.list_:
-            for k,v in e.dict().items():
-                if k in dict_:
-                    dict_[k] += 1
-                else:
-                    dict_[k] = 1
-        return dict_
+            for k,v in e.data().items():
+                if v is not None:
+                    if k in dict_ :
+                        dict_[k] += 1
+                    else:
+                        dict_[k] = 1
+        return {"len": len(self.list_), "attribute frequencies" : dict_}
 
-    def append(self, value_: dict) -> bool:
-        """Add an element to the aggregation"""
-        if isinstance(value_, dict) and "id_" in value_:
-            self.list_.append(value_)
-            return True
-        return False
+    def append(self, meta_data_object: any, check_uniq: bool = True) -> bool:
+        """Add an element to the aggregation.
+        Wrap the add method
+        """
+        return self.add(meta_data_object, check_uniq)
     
     def get_items(self, meta_data_object: any, attr: str = "id_") -> list:
         """Check if there is an item in aggregation with same key_attr. 
         Return the first MetaDataObject found if True, else None:
         """
-        return [x for x in self.list_ if attr in x.data() and x.data[attr]]
+        return [x for x in self.list_ if attr in x.data() and x.data()[attr]]
+    
+    def duplicate_test(self, meta_data_object: any = None) -> bool:
+        """ Check if an MetaDataObject already exists in Aggregation.
+        
+        Return True if this is the case.
+        If no object is given the method perform an integrity test of the given index.
+        Return True if there a duplicate primary keys.
+        This method use the self.key_attribute value  of "id_" if not given.
+        This will not work with key_attribute which is using int or string.
+        """
+        if meta_data_object is None:
+            if len(self) > 0:
+                meta_data_object = self.list_[0]
+            else:
+                return False
+        key_attribute_value = meta_data_object.data()[meta_data_object.key_attribute]
+        if key_attribute_value is not None:
+            if len(self.select_by_key(key_attribute_value, meta_data_object.key_attribute)) > 0:
+                return True
+            else:
+                return False
         
     def _is_in_lang(self, dict_: dict, search_value: str, lang: str) -> bool:
         """Check if the language key of a sub dict match with a certain value"""
@@ -140,7 +168,8 @@ class Aggregation(list):
         return False
             
     def __str__(self):
-        return self.__class__.__name__ +"("+json.dumps(self.list_, indent=2)+")"
+        json_ = [x.to_json(simplify= True) for x in self.list_]
+        return self.__class__.__name__ +"("+json.dumps(json_, indent=2)+")"
     
 class InformationObjectAggregation(Aggregation):
     """Manage a list of InformationObject"""
