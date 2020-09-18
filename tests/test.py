@@ -1,10 +1,12 @@
-import os, sys
+import os
+import sys
+import json
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
 import unittest
-from pyarchmeta import meta, helper, factory, aggregation
+from pyarchmeta import meta, helper, factory, aggregation, xml_
 
 
 class MetaDataObjectTest(unittest.TestCase):
@@ -81,6 +83,29 @@ class AggregationTest(unittest.TestCase):
         #print(self.ioa[0])
         #print('self.ioa')
         #print(self.ioa)
+    
+    def test_read_from_xml(self):
+        print("--> Aggregation.test_read_from_xml")
+        xml_obj = xml_.XML_()
+        result= xml_obj.load("ead3_multi_level_optimum.xml")
+        r=xml_obj.read()
+        print("->>",result)
+        
+        print(json.dumps(r.to_json(simplify=True, with_none=False),indent=2))
+
+
+class XMLTest(unittest.TestCase):
+    
+    def setUp(self):
+        pass
+    
+    
+    def test_validate(self):
+        print("--> XMLTest.test_validate")
+        xml_obj = xml_.XML_("ead3_multi_level_optimum.xml")
+        print ("Result", xml_obj.validate_xsd())
+    
+
 
 
 if __name__ == "__main__": 

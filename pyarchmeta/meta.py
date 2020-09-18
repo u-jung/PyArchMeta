@@ -51,7 +51,7 @@ class MetaDataObject():
             return False
         return True        
     
-    def set_attr_dict(self, dict_: dict) -> bool:
+    def set_attr_dict(self, dict_: dict, lang: str = GlobalConst.LANGUAGES[0]) -> bool:
         """Set attributes according to key, values from a dict."""
         if isinstance(dict_, dict):
             result = True
@@ -154,6 +154,8 @@ class MetaDataObject():
         if isinstance(dict_, dict):
             return self._simplify(dict_,lang)
         else:
+            if dict_ is None:
+                return ""
             return dict_[lang]
     
     def read(self):
@@ -446,14 +448,18 @@ class Actor(MetaDataObject):
     
     def __init__(self, id_: int = None, main_: str = ""):
         super().__init__()
+        if main_ != "":
+            self.set_attr(self._main_attr(), main_)
 
 class Repository(MetaDataObject):
     """Manage the repository."""
     
     FIELDS = GlobalConst.REPOSITORY_FIELDS
     
-    def __init__(self, id_: int = None, main_: str = "",lang: str = GlobalConst.LANGUAGES[0]):
+    def __init__(self, id_: int = None, default: str = "",lang: str = GlobalConst.LANGUAGES[0]):
         super().__init__()
+        if default != "":
+            self.set_attr(self._main_attr(), default)
     
 
 class AccessPoint(Term):
@@ -461,8 +467,10 @@ class AccessPoint(Term):
     FIELDS = GlobalConst.ACCESS_POINT_FIELDS
     TYPES = GlobalConst.ACCESS_POINT_TYPES
     
-    def __init__(self, id_: int = None, main_: str = "", lang: str = GlobalConst.LANGUAGES[0]):
+    def __init__(self, id_: int = None, default: str = "", lang: str = GlobalConst.LANGUAGES[0]):
         super().__init__()
+        if default != "":
+            self.set_attr(self._main_attr(), default, lang)
         
        
   

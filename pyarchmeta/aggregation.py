@@ -170,12 +170,18 @@ class Aggregation(list):
     def __str__(self):
         json_ = [x.to_json(simplify= True) for x in self.list_]
         return self.__class__.__name__ +"("+json.dumps(json_, indent=2)+")"
+        
+        
     
 class InformationObjectAggregation(Aggregation):
     """Manage a list of InformationObject"""
     
     def __init__(self):
         super().__init__()
+        
+    def read_from_xml(self, filename: str) -> int:
+        """Read InformationObjects from XML file"""
+        xml_obj = xml.XML(filename)
     
     def is_parent(self,  other):
         """Check if an item is the parent of another"""
@@ -200,7 +206,6 @@ class InformationObjectAggregation(Aggregation):
         return self["legacy_id"].__ge__(other)
         
     
-    
 
 class TermAggregation(Aggregation):
     """Manage a list of Term"""
@@ -222,6 +227,12 @@ class RepositoryAggregation(Aggregation):
 
 class AccessPointAggregation(Aggregation):
     """Manage a list of InformationObject"""
+    
+    def __init__(self):
+        super().__init__()
+
+class LevelOfDescriptionAggregation(Aggregation):
+    """Manage a list of Term"""
     
     def __init__(self):
         super().__init__()

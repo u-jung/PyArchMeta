@@ -84,14 +84,39 @@ class GlobalConst():
             "status":"int",
             "key_map":"str",
             "prediction":"float",
-            "validation":"int"
+            "validation":"int",
+            "container":"str"
              }
 
     TERM_TYPES=("acces_point","level_of_description")
 
     ACCESS_POINT_TYPES = ("subject","genre","place","name")
     
-    REPOSITORY_FIELDS = {}
+    REPOSITORY_FIELDS = {
+        "corpname":"dict",
+        "identifier":"str",
+        "desc_status_id":"int",
+        "desc_detail_id":"int",
+        "desc_identifier":"str",
+        "upload_limit":"float",
+        "source_culture":"str",
+        "geocultural_context" :"dict",
+        "collecting_policies":"dict",
+        "buildings":"dict",
+        "holdings":"dict",
+        "finding_aids":"dict",
+        "opening_times":"dict", 
+        "access_conditions":"dict",
+        "disabled_access":"dict",
+        "research_services":"dict", 
+        "reproduction_services":"dict",
+        "public_facilities":"dict",
+        "desc_institution_identifier":"dict", 
+        "desc_rules":"dict",
+        "desc_sources":"dict",
+        "desc_revision_history":"dict",
+    
+    }
     
     ACTOR_FIELDS = {
             "id_":"int",
@@ -123,8 +148,26 @@ class GlobalConst():
     CORE_FIELDS = {
             "name",
             "title",
-            "authorized_form_of_name"
+            "authorized_form_of_name",
+            "corpname"
             }
+    
+    ISO639 = {
+     'ger': 'de', 
+	 'eng': 'en', 
+	 'fre': 'fr', 
+	 'spa': 'es', 
+	 'prt': 'pt', 
+	 'rus': 'ru', 
+	 'jpn': 'jp', 
+	 'zho': 'zh', 
+	 'ita': 'it', 
+	 'dan': 'dk', 
+	 'swe': 'sw', 
+	 'nld': 'nl', 
+	 'pol': 'pl', 
+	 'ara': 'ar', 
+	 'tur': 'tk'}
     
 
     def __init__(self):
