@@ -511,10 +511,13 @@ class LevelOfDescription(Term):
     
     g= GlobalConst()
     LANGUAGES = g.LANGUAGES
+    FIELDS = GlobalConst.LEVEL_OF_DESCRIPTION_FIELDS
         
     def __init__(self, id_: int = None, main_: str = "", lang: str = GlobalConst.LANGUAGES[0]):
         super().__init__()
         self.taxonomy = "level_of_description"
+        if default != "":
+            self.set_attr(self._main_attr(), default, lang)
 
 
 

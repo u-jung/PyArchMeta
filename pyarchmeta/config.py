@@ -30,7 +30,7 @@ class GlobalConst():
             "identifier":"str",
             "accession_number":"str",
             "title":"dict",
-            "level_of_description":"str",
+            "level_of_description":"object.level_of_description",
             "extent_and_medium":"dict",
             "repository":"dict",
             "archival_history":"dict",
@@ -142,8 +142,16 @@ class GlobalConst():
             "wikidata":"str",
             "ap_type":"str",
             "name":"dict",
-            "parent_id":"int"
+            "parent_id":"int",
+            "identifier":"str"
             }
+    
+    LEVEL_OF_DESCRIPTION_FIELDS ={
+        "id_":"int",
+        "name":"dict",
+        "parent_id":"int"
+            
+    }
 
     CORE_FIELDS = {
             "name",
@@ -167,7 +175,8 @@ class GlobalConst():
 	 'nld': 'nl', 
 	 'pol': 'pl', 
 	 'ara': 'ar', 
-	 'tur': 'tk'}
+	 'tur': 'tk',
+     'dut': 'nl'}
     
 
     def __init__(self):

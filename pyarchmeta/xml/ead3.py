@@ -1,6 +1,6 @@
 import re
 
-from pyarchmeta import meta, aggregation, xml_
+from pyarchmeta import meta, aggregation, xml_, factory
 from pyarchmeta.config import GlobalConst
 from lxml import etree
 
@@ -267,9 +267,11 @@ class EAD3Access(xml_.XML_):
                 namespaces = self.namespaces)
         tmp = self.lo.join_non_empty(tmp," - ")       
         rep.set_attr("buildings",self.lo.join_non_empty(tmp,""), self.lang)
-        rep.set_attr("desc_identifier",
-                self.tree.xpath("//empty:repository/empty:corpname//@identifier", 
-                namespaces = self.namespaces)[0], self.lang )
+        print(self.namespaces)
+        #desc_identifier = 
+        #rep.set_attr("desc_identifier",
+        #        self.tree.xpath("//empty:repository/empty:corpname//@identifier", 
+        #        namespaces = self.namespaces)[0], self.lang )
         #print(rep)
     
     
@@ -277,14 +279,15 @@ class EAD3Access(xml_.XML_):
         """Retrieve collection information"""
         tmp = self.tree.xpath('//empty:dsc/*[re:test(local-name(), "c[0-9]*")]/*[re:test(local-name(), "c[0-9]*")]', 
                 namespaces = self.namespaces)
-        #print("tmp", tmp)
-        #print (self.xml_path)
         context = etree.iterparse(self.xml_path)
         inoa = aggregation.InformationObjectAggregation()
         for action, elem in context:
             try:
                 if re.search("^.*}c[0-9]*$",elem.tag):
                     ino = meta.InformationObject()
+                    self._processor(ino,attr="level_of_description", 
+                                element = elem, function_="_attr", params={"attr":"level"})
+                    
                     #print("\n%s: %s : %s" % (action, elem.tag, elem.getparent().tag))
                     for e in elem.iterdescendants():
                         tag_ = e.tag.split("}")[1]
@@ -294,7 +297,6 @@ class EAD3Access(xml_.XML_):
                             for i,ee in enumerate(value_):
                                 #print(ee,type(ee))
                                 if ee[0] == tag_:
-                                    #print(e,ee)
                                     self._processor(ino,attr=key_, element = e, function_=ee[1], params=ee[2])
                     if ino:
                         inoa.append(ino,False)
@@ -310,47 +312,73 @@ class EAD3Access(xml_.XML_):
         """Select a function to retrieve the information for a specific tag"""
         if function_ == "_text":
             return self._text(ino, attr, element, params)
-        if function_ == "_tag":
-            return self._attr(ino, attr,  element, params)
+        if function_ == "_attr":
+            return self._attr(ino, attr, element, params)
         if function_ == "_up":
             return self.up(ino, attr, element, params)
         return ino
     
     
-    def _text(self, ino: any, attr: str, element: any, params: dict):
+    def _attr(self, ino: any, attr: str, element: any, params: dict) -> None:
+        """Read an attribut from the given element"""
+        
+        if params["attr"] in element.attrib:
+            ino.set_attr(attr,element.attrib[params["attr"]],self.lang)
+        return ino
+        
+    
+    def _text(self, ino: any, attr: str, element: any, params: dict)-> None:
+        """Read texts from element an sub elements"""
         #print(element.tag)
         element_text = self.so.strip_non_printable(element.text)
         if "sub_tags" in params:
             only = params["sub_tags"]
-            children_text = self._iterdesc(element=element,
-                        only=only, until=self.stop_tags)
         else:
+            only=[]
+        children_ = (self._iterdesc(element=element,
+                    only=only, until=self.stop_tags)).strip(" ")
+                    
+        if attr == "event_dates":
+            dates_ = self._make_dates(children_, element)
+            children_ = dates_["event_dates"]
+            ino.set_attr("event_start_dates", dates_["event_start_dates"])
+            ino.set_attr("event_end_dates", dates_["event_end_dates"])
+                    
+        if len(ino.FIELDS[attr].split(".")) == 2:
+            obj_ = factory.Factory(ino.FIELDS[attr].split(".")[1],
+                    children_, self.lang).get_product()
+            if "identifier" in params:
+                identifier = "|".join([element.attrib[x] for x in params["identifier"] if x in element.attrib])
+                
+                obj_.set_attr("identifier", identifier)
+                ino.set_attr(attr, obj_)
+        else:
+            format_ = "str"
             children_text = self._iterdesc(element=element,
-                         until=self.stop_tags)
-        composition = "|".join([element_text, children_text]).strip("|")
-        print("composition", composition, attr)
-        ino.set_attr(attr, composition, self.lang)
+                        only=only, until=self.stop_tags, format_=format_)
+            composition = "|".join([element_text, children_text]).strip("|")
+            ino.set_attr(attr, composition, self.lang)
         return ino
     
-    def _attr(self, ino: any, attr: str, element: any, params: dict):
-        return ino
         
     def _iterdesc(self, element: any = None, only: list=[] , 
-                until: list = [], join: str = "|", *args, **kwargs) -> str:
+                until: list = [], join: str = "|", format_: str = "str",
+                 *args, **kwargs) -> any:
         str_ = ""
         for e in element.iterdescendants():
             tag_ = self._remove_ns(e.tag)
             text_ = self.so.strip_non_printable(e.text)
+            if tag_  not in only:
+                break
+            if tag_ in until:
+                break
             if tag_ not in self.ignore_tags:
                 str_+= "{" + tag_ + "} " 
             if text_ == "":
                 str_+= "| "
             else:
                 str_+= " " + text_
-            if tag_  not in only:
-                break
-            if tag_ in until:
-                break
+
         return str_
     
     def _getpath(self, elem: any, anonym_path: str) -> str:
@@ -365,3 +393,9 @@ class EAD3Access(xml_.XML_):
                 xpath=elem.tag + list_[i-1]+"/" + xpath
         return xpath
 
+    def _make_dates(self, dates_str_: str, element:any) -> dict:
+        """Create a dict with different date information"""
+        return {"event_dates": dates_str_,
+                "event_start_dates":"",
+                "event_end_dates":""
+                }
