@@ -20,8 +20,8 @@ class Factory():
             self.object_ = meta.Repository(None, default, lang)
             
         if type_ in ("ead3"):
-            self.object_ = ead3.EAD3Access(xml_path= kwargs["xml_path"], tree= kwargs["tree"], namespaces= kwargs["namespaces"])
-            
+            #self.object_ = ead3.EAD3Access(xml_path= kwargs["xml_path"], tree= kwargs["tree"], namespaces= kwargs["namespaces"])
+            self.object_ = ead3.EAD3Access()
         
     def get_product(self):
         """Get the produced object"""

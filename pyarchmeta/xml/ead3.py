@@ -332,18 +332,18 @@ class EAD3Access(xml_.XML_):
 
 
 
+    def __init__(self):
+        super().__init__()
+        self.recordid = "?"
+        
     
-    
-    def __init__(self, xml_path: str, tree: any, namespaces: set ):
+    def __xinit__(self, xml_path: str, tree: any, namespaces: set ):
         super().__init__()
         self.tree = tree
         self.namespaces = namespaces
         self.xml_path = xml_path
-        if "" in namespaces:
-            self.namespaces["empty"] = self.namespaces[""]
-            self.namespaces.pop("",None)
-        self.namespaces["re"] = "http://exslt.org/regular-expressions"
-        self.recordid = "?"
+
+
 
         
         
@@ -355,12 +355,12 @@ class EAD3Access(xml_.XML_):
             self.lang = self.oo.transform_iso_639(tmp[0].attrib["langcode"], None)[1]
         except IndexError:
             self.lang = GlobalConst.LANGUAGES[0]
-        result = self._get_items_control()
+        result = self._get_controls()
         result = self._get_collection( )
         return result
         
         
-    def _get_items_control(self):
+    def _get_controls(self):
         """Retrieve general information"""
         tmp = self.tree.xpath("//empty:repository/empty:corpname//text()", 
                 namespaces = self.namespaces)
@@ -370,6 +370,7 @@ class EAD3Access(xml_.XML_):
                 namespaces = self.namespaces)
         tmp = self.lo.join_non_empty(tmp," - ")       
         rep.set_attr("buildings",self.lo.join_non_empty(tmp,""), self.lang)
+        self.aggregations["RepositoryAggregation"].append(rep)
     
     
     def _get_collection(self):
@@ -402,7 +403,8 @@ class EAD3Access(xml_.XML_):
                 result = self._get_parent(ino, element)
                 ino = self._retrieve_item(ino, element)
                 inoa.append(ino,False)
-        return(inoa)
+        self.aggregations["InformationObjectAggregation"].append(inoa)
+        return True
                 
     def _get_id(self, ino: any, element: any) -> bool:
         """ Write the legacy_id to the element."""

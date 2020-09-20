@@ -1,6 +1,22 @@
 from lxml import etree
 import pkg_resources
 from pyarchmeta import factory, meta, aggregation, helper
+from pyarchmeta.config import GlobalConst
+#from pyarchmeta.xml import ead3
+
+
+
+class XMLImporter():
+    """Class factory to manage the call of xml converter for import"""
+    
+    def __init__(self):
+        self.domains = GlobalConst.MODULES
+    
+    def __new__(self, domain: str):
+        if domain in self.domains:
+            path_ = self.domains[domain]
+            
+            return ead3.EAD3Access()
 
 
 class XML_():
@@ -15,20 +31,18 @@ class XML_():
     stop_tags = ('c', 'c01', 'c02', 'c03', 'c04', 'c05', 'c06', 'c07', 'c08', 'c09', 'c10', 'c11', 'c12')
 
     
-    def __init__(self, filename: str= ""):
+    def __init__(self):
         resource_package = __name__
         self.xsd_path = '/'.join(('pyarchmeta','xml', 'ead3.xsd')) 
-        self.xml_path = '/'.join(('tmp', filename)) 
+        self.xml_path = ""
         self.tree = None
         self.namespaces = None
         self.ns = None
-        self.repositories = aggregation.RepositoryAggregation()
-        self.information_objects = aggregation.InformationObjectAggregation()
-        self.actors = aggregation.ActorAggregation()
-        self.access_points = aggregation.ActorAggregation()
-        self.levels_of_description = aggregation.LevelOfDescriptionAggregation()
-        if filename != "":
-            self.load(filename)
+        self.aggregations = {
+                            "InformationObjectAggregation":[],
+                            "RepositoryAggregation":[],
+                            }
+
 
 
     def load(self, filename: str) -> any:
@@ -36,11 +50,9 @@ class XML_():
         self.xml_path = '/'.join(('tmp', filename)) 
         try:
             self.tree = etree.parse(self.xml_path)
-            self.namespaces=dict([node for _,node in etree.iterparse(self.xml_path, events=['start-ns'])])
-            if "" in self.namespaces:
-                self.ns="{"+self.namespaces['']+"}"
-            else:
-                self.ns=""
+            self.namespaces = dict([node for _,node in etree.iterparse(self.xml_path, events=['start-ns'])])
+            self.namespaces["empty"] = self.namespaces.pop("")
+            self.namespaces["re"] = "http://exslt.org/regular-expressions"
             return self.tree.getroot()
         except OSError:
             return "Could not load file " + self.xml_path
@@ -56,13 +68,20 @@ class XML_():
             except etree.XMLSyntaxError:
                 return False
                 
-    def read(self):
+    def Xread(self):
         """Determine the XML namesspace and read the elements"""
         if self.namespaces[''] == "http://ead3.archivists.org/schema/":
-            obj_ = factory.Factory("ead3", xml_path = self. xml_path, tree=self.tree, namespaces= self.namespaces).get_product()
-            
+            #obj_ = factory.Factory("ead3", xml_path = self. xml_path, tree=self.tree, namespaces= self.namespaces).get_product()
+            obj_ = factory.Factory("ead3").get_product()
         return obj_.get_items()
-        
+    
+    def read(self):
+        return self.get_items()
+    
+    def get_aggregations(self, key_: str = "InformationObjectAggregation"):
+        """Return a list of creted aggregations"""
+        if key_ in self.aggregations:
+            return self.aggregations[key_]
     
     def _remove_ns(self, tag_: str) -> str:
         """Clean the element tag string and remove the {namespace} part"""

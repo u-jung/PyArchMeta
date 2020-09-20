@@ -180,6 +180,8 @@ class GlobalConst():
 	 'tur': 'tk',
      'dut': 'nl'}
     
+    
+   
 
     def __init__(self):
         f = open("pyarchmeta/config.json","r")
