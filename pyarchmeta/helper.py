@@ -20,6 +20,17 @@ class StringOps():
                       
     def strip_non_printable(self,str_: str) -> str:
         return re.sub(r'\n|\t','',str_)
+    
+    def clean_leading(self, str_: str, chars: list) -> str:
+        """ srip characters from the ends of a string """
+        chars += " "
+        i = 0
+        for i,c in enumerate(str_):
+            if c not in chars:
+                break
+        str_ = str_[i:]
+        return str_
+        
 
 
 class ListOps():

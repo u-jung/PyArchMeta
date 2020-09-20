@@ -85,7 +85,9 @@ class GlobalConst():
             "key_map":"str",
             "prediction":"float",
             "validation":"int",
-            "container":"str"
+            "container":"str",
+            "origination":"list.access_point",
+            "biografical_history":"dict"
              }
 
     TERM_TYPES=("acces_point","level_of_description")

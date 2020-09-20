@@ -76,6 +76,26 @@ class XML_():
             "namespaces":self.namespaces,
             "ns":self.ns 
         })
+
+    def _iterdesc(self, element: any = None, only: list=[] , 
+                until: list = [], join: str = "|", format_: str = "str",
+                 *args, **kwargs) -> any:
+        str_ = ""
+        for e in element.iterdescendants():
+            if isinstance(e, etree._Comment):
+                continue
+            tag_ = self._get_short_tag(e)
+            text_ = self.so.strip_non_printable(e.text)
         
-
-
+            if tag_  not in only:
+                break
+            if tag_ in until:
+                break
+            if tag_ not in self.ignore_tags:
+                str_+= "{" + tag_ + "} " 
+            if text_ == "":
+                str_+= "|"
+            else:
+                str_+= " " + text_
+            str_ = ("|").join([x for x in str_.split("|") if x.strip() != ""])
+        return self.so.clean_leading(str_,"|")

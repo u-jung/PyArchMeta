@@ -8,7 +8,9 @@ class EAD3Access(xml_.XML_):
     """ Manage the Encoded Archival Description Standard , Version 3 XML"""
     
     mapping = {
-        "identifier":(
+        "legacy_id":[["unitid","_attr",{"attr":"id"}]],
+        "parent_id":[["unitid","_up",{"attr":"id"}]],
+        "identifier":[
                 ["agency_id","_text",
                     {
                     "other_text":"recordid", 
@@ -20,31 +22,31 @@ class EAD3Access(xml_.XML_):
                     "attr":['countrycode','repositorycode']
                     }
                 ]
-                ),
+                ],
         "title":[
                 ["unittitle","_text",{}]],
-        "event_dates":(
+        "event_dates":[
                     ["unitdate","_text",{}],
                     ["unitdatestructured","_text",{
                         "sub_tags":("daterange", "dateset", "datesingle", "fromdate","todate")
                     }]
-                    ),
-        "level_of_description":(
+                    ],
+        "level_of_description":[
                     ["archdesc","_attr",{"attr":"level"}],
                     ["c","_attr",{"attr":"level"}]
         
-                ),
-        "extent_and_medium":(
+                ],
+        "extent_and_medium":[
                     ["physdesc","_text",{}],
                     ["physdescstructured","_text",{
                         "attr":["physdescstructuredtype", "coverage"],
                         "sub_tags":["quantity","unittype"]
                     }],
-                ),
+                ],
         "origination":[
                     ["origination","_text",{
-                        "attr":["source", "identifier"],
-                        "sub_tags":["corpname", "famname", "name", "persname"],
+                        "identifier":["source", "identifier"],
+                        "sub_tags":["corpname", "famname", "name", "persname", "part"],
                         "sub_sub_tags":["part"]
                     }]
                 ],
@@ -88,11 +90,11 @@ class EAD3Access(xml_.XML_):
                         "sub_tags":("accessrestrict","blockquote", "chronlist", "head", "list", "p", "table")
                     }]
                 ],
-        "reproduction_conditions":(
+        "reproduction_conditions":[
                     ["userestrict","_text",{
                         "sub_tags":("userestrict","blockquote", "chronlist", "head", "list", "p", "table")
                     }]
-                ),
+                ],
         "language":[
                     ["language", "_attr",{
                         "attr":"langcode",
@@ -110,7 +112,7 @@ class EAD3Access(xml_.XML_):
                         "within":"langdeclaration"
                     }]
                 ],
-        "reproduction_conditions":[
+        "physical_characteristics":[
                     ["phystech","_text",{
                         "sub_tags":("phystech","blockquote", "chronlist", "head", "list", "p", "table")
                     }]
@@ -177,7 +179,6 @@ class EAD3Access(xml_.XML_):
                         "sub_tags":("abbr", "emp", "expan", "foreign", "lb", "ptr", "ref")
                     }]
                 ],
-        "legacy_id":[["unitid","_attr",{"attr":"id"}]],
         "digital_object_URI":[["dao","_attr",{"attr":"href"}]],
         "place_access_points":[
                     ["geogname","_text",{
@@ -227,8 +228,109 @@ class EAD3Access(xml_.XML_):
                         "identifier":("identifier","source")
                         
                         }]
-                ]
+                ],
+        "recordid":[
+                    ["recordid","_text",{
+                        "attr":("instanceurl"),
+                        "within":"control"
+                    }]
+                ],
+        "titleproper":[
+                    ["titleproper","_text",{
+                        "attr":("render"),
+                        "sub_tags":( "p", "table"),
+                        "within":"titlestmt"
+                    }]
+                ],
+        "subtitle":[
+                    ["subtitle","_text",{
+                        "attr":("render"),
+                        "sub_tags":( "p", "table"),
+                        "within":"titlestmt"
+                    }]
+                ],
+        "author":[
+                    ["author","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"titlestmt"
+                    }]
+                ],
+        "sponsor":[
+                    ["sponsor","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"titlestmt"
+                    }]
+                ],
+        "languagedeclaration":[
+                    ["languagedeclaration","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "localcontrol":[
+                    ["localcontrol","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "localtypedeclaration":[
+                    ["localtypedeclaration","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "maintenanceagency":[
+                    ["maintenanceagency","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "maintenancehistory":[
+                    ["maintenancehistory","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "maintenancestatus":[
+                    ["maintenancestatus","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "otherrecordid":[
+                    ["otherrecordid","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "publicationstatus":[
+                    ["publicationstatus","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "representation":[
+                    ["representation","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "rightsdeclaration":[
+                    ["rightsdeclaration","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+        "rightsdeclaration":[
+                    ["rightsdeclaration","_text",{
+                        "sub_tags":( "p", "table"),
+                        "within":"control"
+                    }]
+                ],
+                
     }
+
+
 
     
     
@@ -241,6 +343,7 @@ class EAD3Access(xml_.XML_):
             self.namespaces["empty"] = self.namespaces[""]
             self.namespaces.pop("",None)
         self.namespaces["re"] = "http://exslt.org/regular-expressions"
+        self.recordid = "?"
 
         
         
@@ -267,12 +370,6 @@ class EAD3Access(xml_.XML_):
                 namespaces = self.namespaces)
         tmp = self.lo.join_non_empty(tmp," - ")       
         rep.set_attr("buildings",self.lo.join_non_empty(tmp,""), self.lang)
-        print(self.namespaces)
-        #desc_identifier = 
-        #rep.set_attr("desc_identifier",
-        #        self.tree.xpath("//empty:repository/empty:corpname//@identifier", 
-        #        namespaces = self.namespaces)[0], self.lang )
-        #print(rep)
     
     
     def _get_collection(self):
@@ -280,32 +377,94 @@ class EAD3Access(xml_.XML_):
         tmp = self.tree.xpath('//empty:dsc/*[re:test(local-name(), "c[0-9]*")]/*[re:test(local-name(), "c[0-9]*")]', 
                 namespaces = self.namespaces)
         context = etree.iterparse(self.xml_path)
+        tree = etree.parse(self.xml_path)
+        root = tree.getroot()
         inoa = aggregation.InformationObjectAggregation()
-        for action, elem in context:
-            try:
-                if re.search("^.*}c[0-9]*$",elem.tag):
-                    ino = meta.InformationObject()
-                    self._processor(ino,attr="level_of_description", 
-                                element = elem, function_="_attr", params={"attr":"level"})
+        id_increment = 1
+        
+        for element in root.iterdescendants():
+            if  isinstance(element,etree._Comment):
+                continue
+            else:
+                tag_ = str(element.tag).split("}")[-1]
+                element.attrib["tag_"] = tag_
+            if element.attrib["tag_"] == "recordid":
+                if "instanceurl" in element.attrib:
+                    self.recordid = element.attrib["instanceurl"]
+                else:
+                    self.recordid = element.text
                     
-                    #print("\n%s: %s : %s" % (action, elem.tag, elem.getparent().tag))
-                    for e in elem.iterdescendants():
-                        tag_ = e.tag.split("}")[1]
-                        #print (":",tag_, e.tag, e.text)
-                        for key_, value_ in self.mapping.items():
-                            #print("+++", key_, value_)
-                            for i,ee in enumerate(value_):
-                                #print(ee,type(ee))
-                                if ee[0] == tag_:
-                                    self._processor(ino,attr=key_, element = e, function_=ee[1], params=ee[2])
-                    if ino:
-                        inoa.append(ino,False)
-        
-            except IndexError:
-                print("%s: %s : %s" % (action, elem.tag, ""))
-                #print(dir(elem))
+            if re.search("^c[0-9]*$", element.attrib["tag_"]) or element.attrib["tag_"] == "archdesc":
+                element.attrib["id_"] = str(id_increment)
+                id_increment += 1
+                ino = meta.InformationObject()
+                result = self._get_id(ino, element)
+                result = self._get_parent(ino, element)
+                ino = self._retrieve_item(ino, element)
+                inoa.append(ino,False)
         return(inoa)
+                
+    def _get_id(self, ino: any, element: any) -> bool:
+        """ Write the legacy_id to the element."""
+        if "id" in element.attrib:
+            ino.set_attr("legacy_id", element.attrib["id"])
+        else:
+            ino.set_attr("legacy_id", element.attrib["id_"])
+        return True
+    
+    
+    def _get_parent(self, ino: any, element: any) -> bool:
+        """ Write the parent_id to the element. """
+        if element.attrib["tag_"] != "archdesc":
+            el = element.getparent()
+            if el.tag.endswith("dsc"):
+                el = el.getparent()
+            if "id" in el.attrib:
+                ino.set_attr("parent_id", el.attrib["id"])
+            else:
+                ino.set_attr("parent_id", el.attrib["id_"])
+            return True
+        return False
         
+    
+    def _retrieve_item(self, ino: any, start_element: any) -> bool:
+        """ Fill the InformationObject with data. """
+        if "level" in start_element.attrib:
+            ino.set_attr("level_of_description", 
+                        start_element.attrib["level"],self.lang)
+        for el in start_element.iterdescendants():
+            if re.search("^c[0-9]*$",self._get_short_tag(el)):
+                break
+            mapping = self._get_mapping_element(el)
+            if mapping:
+                ino = self._processor(ino,attr=mapping["attr"], element = el, function_=mapping["func"], params=mapping["param"])
+        return ino
+
+    def _get_short_tag(self, element: any) -> str:
+        """Return the simple tag (without namespace)"""
+        try:
+            return element.tag.split("}")[-1]
+        except AttributeError:
+            return "?"
+        
+
+    def _get_mapping_element(self, element: any) -> dict:
+        """ Retrieve the function related to the given element"""
+        if isinstance(element, etree._Element):
+            tag_ = self._get_short_tag(element)
+            for key_, value_ in self.mapping.items():
+                for i,e in enumerate(value_):
+                    if e[0] == tag_:
+                        if "within" in e[2]:
+                            if e[2]["within"] != self._get_short_tag(element.getparent()):
+                                print(tag_," is sub of ", self._get_short_tag(element.getparent()), "instead", e[2]["within"])
+                                return None
+                        return {"attr": key_,
+                                "elem": e[0],
+                                "func": e[1],
+                                "param": e[2]
+                                }
+        return None
 
     
     def _processor(self, ino: any, attr: str, element: any, function_: str, params: dict, *args, **kwargs) -> any:
@@ -315,7 +474,7 @@ class EAD3Access(xml_.XML_):
         if function_ == "_attr":
             return self._attr(ino, attr, element, params)
         if function_ == "_up":
-            return self.up(ino, attr, element, params)
+            return self._up(ino, attr, element, params)
         return ino
     
     
@@ -325,11 +484,14 @@ class EAD3Access(xml_.XML_):
         if params["attr"] in element.attrib:
             ino.set_attr(attr,element.attrib[params["attr"]],self.lang)
         return ino
-        
     
+    def _up(self, ino: any, attr: str, element: any, params: dict)-> None:
+        pass
+        
+        
     def _text(self, ino: any, attr: str, element: any, params: dict)-> None:
-        """Read texts from element an sub elements"""
-        #print(element.tag)
+        """Read texts from element and sub elements."""
+        #print("---",element.tag)
         element_text = self.so.strip_non_printable(element.text)
         if "sub_tags" in params:
             only = params["sub_tags"]
@@ -340,7 +502,7 @@ class EAD3Access(xml_.XML_):
                     
         if attr == "event_dates":
             dates_ = self._make_dates(children_, element)
-            children_ = dates_["event_dates"]
+            ino.set_attr("event_dates", dates_["event_dates"])
             ino.set_attr("event_start_dates", dates_["event_start_dates"])
             ino.set_attr("event_end_dates", dates_["event_end_dates"])
                     
@@ -360,26 +522,7 @@ class EAD3Access(xml_.XML_):
             ino.set_attr(attr, composition, self.lang)
         return ino
     
-        
-    def _iterdesc(self, element: any = None, only: list=[] , 
-                until: list = [], join: str = "|", format_: str = "str",
-                 *args, **kwargs) -> any:
-        str_ = ""
-        for e in element.iterdescendants():
-            tag_ = self._remove_ns(e.tag)
-            text_ = self.so.strip_non_printable(e.text)
-            if tag_  not in only:
-                break
-            if tag_ in until:
-                break
-            if tag_ not in self.ignore_tags:
-                str_+= "{" + tag_ + "} " 
-            if text_ == "":
-                str_+= "| "
-            else:
-                str_+= " " + text_
 
-        return str_
     
     def _getpath(self, elem: any, anonym_path: str) -> str:
         """Rebuild the xpath of an element"""
@@ -395,7 +538,18 @@ class EAD3Access(xml_.XML_):
 
     def _make_dates(self, dates_str_: str, element:any) -> dict:
         """Create a dict with different date information"""
-        return {"event_dates": dates_str_,
+
+        dates = dates_str_.replace("{dateset}","")
+        dates = dates.replace("{daterange}","")
+        dates = dates.replace("{fromdate}","")
+        dates = dates.replace("|","")
+        dates = dates.replace("{todate}","-")
+        dates = dates.replace("{datesingle}",", ")
+        dates = dates.replace(" ","")
+        dates = dates.strip(" ")
+        dates = dates.strip(",")
+        dates = dates.replace(",",", ")
+        return {"event_dates": dates,
                 "event_start_dates":"",
                 "event_end_dates":""
                 }
