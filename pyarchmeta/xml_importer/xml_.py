@@ -1,22 +1,10 @@
 from lxml import etree
-import pkg_resources
+import json
+import sys
+import os
+import pkg_resources    
 from pyarchmeta import factory, meta, aggregation, helper
 from pyarchmeta.config import GlobalConst
-#from pyarchmeta.xml import ead3
-
-
-
-class XMLImporter():
-    """Class factory to manage the call of xml converter for import"""
-    
-    def __init__(self):
-        self.domains = GlobalConst.MODULES
-    
-    def __new__(self, domain: str):
-        if domain in self.domains:
-            path_ = self.domains[domain]
-            
-            return ead3.EAD3Access()
 
 
 class XML_():
@@ -26,7 +14,8 @@ class XML_():
     so = helper.StringOps()
     lo = helper.ListOps()
     oo = helper.OtherOps()
-    
+    element_mapping = {}
+    date_mapping = {}
     ignore_tags = ("p", "part")
     stop_tags = ('c', 'c01', 'c02', 'c03', 'c04', 'c05', 'c06', 'c07', 'c08', 'c09', 'c10', 'c11', 'c12')
 
@@ -38,6 +27,8 @@ class XML_():
         self.tree = None
         self.namespaces = None
         self.ns = None
+        self.element_mapping = self._load_mapping()["element_mapping"]
+        self.date_mapping = self._load_mapping()["date_mapping"]
         self.aggregations = {
                             "InformationObjectAggregation":[],
                             "RepositoryAggregation":[],
@@ -67,15 +58,10 @@ class XML_():
                 return True
             except etree.XMLSyntaxError:
                 return False
-                
-    def Xread(self):
-        """Determine the XML namesspace and read the elements"""
-        if self.namespaces[''] == "http://ead3.archivists.org/schema/":
-            #obj_ = factory.Factory("ead3", xml_path = self. xml_path, tree=self.tree, namespaces= self.namespaces).get_product()
-            obj_ = factory.Factory("ead3").get_product()
-        return obj_.get_items()
-    
+            
+
     def read(self):
+        """Wrap the get_items method"""
         return self.get_items()
     
     def get_aggregations(self, key_: str = "InformationObjectAggregation"):
@@ -86,6 +72,22 @@ class XML_():
     def _remove_ns(self, tag_: str) -> str:
         """Clean the element tag string and remove the {namespace} part"""
         return tag_.split("}")[-1]
+    
+    def _load_mapping(self):
+        """Load the data from the mapping file"""
+        currentdir = os.path.dirname(os.path.realpath(__file__))
+        filename = currentdir + "/" +(self.__class__.__name__).lower() + ".conf"
+        try:
+            f = open(filename, "r")
+            str_ = ("").join([line[:-1] for line in f.readlines() if not line.startswith("#")])
+            dict_ = json.loads(str_)
+            f.close()
+            return dict_
+        except KeyError:
+            print ("Could not load", filename, "file")
+            return {}
+        
+        
                 
     def __str__(self):
         return str({
@@ -117,4 +119,4 @@ class XML_():
             else:
                 str_+= " " + text_
             str_ = ("|").join([x for x in str_.split("|") if x.strip() != ""])
-        return self.so.clean_leading(str_,"|")
+        return self.so.clean_ends(str_,"|")

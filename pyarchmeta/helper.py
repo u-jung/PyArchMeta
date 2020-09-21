@@ -21,8 +21,8 @@ class StringOps():
     def strip_non_printable(self,str_: str) -> str:
         return re.sub(r'\n|\t','',str_)
     
-    def clean_leading(self, str_: str, chars: list) -> str:
-        """ srip characters from the ends of a string """
+    def clean_leading(self, str_: str, chars: str) -> str:
+        """ strip first characters  of a string """
         chars += " "
         i = 0
         for i,c in enumerate(str_):
@@ -31,7 +31,18 @@ class StringOps():
         str_ = str_[i:]
         return str_
         
-
+    def clean_trailing(self, str_: str, chars: str) -> str:
+        """ strip last characters of a string """
+        str_ = str_[::-1]
+        str_ = self.clean_leading(str_,chars)
+        str_ = str_[::-1]
+        return str_
+    
+        
+    def clean_ends(self, str_: str, chars: str) -> str:
+        """Wrap the clean_leading and the clean_trailing methods"""
+        str_ = self.clean_leading(str_,chars)
+        return self.clean_trailing(str_,chars)
 
 class ListOps():
     """Operate with lists"""

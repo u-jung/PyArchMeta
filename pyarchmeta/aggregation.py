@@ -1,4 +1,5 @@
 import json
+import csv
 
 from pyarchmeta import meta, factory
 from pyarchmeta.config import GlobalConst
@@ -59,6 +60,17 @@ class Aggregation(list):
     def to_json(self, lang: str = "", with_none: bool = True, 
             fall_back: bool = True, simplify: bool = False, *args, **kwargs):
         return [x.to_json(lang = lang, with_none= with_none, fall_back= fall_back, simplify= simplify) for x in self.list_]
+        
+    
+    def to_csv(self):
+        """Write to csv file"""
+        with open('/tmp/names.csv', 'w', newline='') as csvfile:
+            fieldnames = self.statistics()["attribute_frequencies"].keys()
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for e in self.list_:
+                writer.writerow(e.to_json(simplify=True, with_none=False,lang="en"))
+
           
     def statistics(self):
         """count used keys in object list"""
@@ -70,7 +82,7 @@ class Aggregation(list):
                         dict_[k] += 1
                     else:
                         dict_[k] = 1
-        return {"len": len(self.list_), "attribute frequencies" : dict_}
+        return {"len": len(self.list_), "attribute_frequencies" : dict_}
 
     def append(self, meta_data_object: any, check_uniq: bool = True) -> bool:
         """Add an element to the aggregation.
