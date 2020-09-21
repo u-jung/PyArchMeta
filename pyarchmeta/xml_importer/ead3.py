@@ -118,8 +118,9 @@ class EAD3(xml_.XML_):
             if re.search("^c[0-9]*$",self._get_short_tag(el)):
                 break
             mapping = self._get_mapping_element(el)
-            if mapping:
-                ino = self._processor(ino,attr=mapping["attr"], element = el, function_=mapping["func"], params=mapping["param"])
+            if mapping != []:
+                for e in mapping:
+                    ino = self._processor(ino,attr=e["attr"], element = el, function_=e["func"], param=e["param"])
         return ino
 
     def _get_short_tag(self, element: any) -> str:
@@ -132,51 +133,58 @@ class EAD3(xml_.XML_):
 
     def _get_mapping_element(self, element: any) -> dict:
         """ Retrieve the function related to the given element"""
+        list_ = []
         if isinstance(element, etree._Element):
             tag_ = self._get_short_tag(element)
             for key_, value_ in self.element_mapping.items():
                 for i,e in enumerate(value_):
                     if e[0] == tag_:
                         if "within" in e[2]:
-                            if e[2]["within"] != self._get_short_tag(element.getparent()):
+                            if self._get_short_tag(element.getparent()) in e[2]["within"]:
+                                list_.append({"attr": key_,
+                                            "elem": e[0],
+                                            "func": e[1],
+                                            "param": e[2]
+                                            })
+                            else:
                                 print(tag_," is sub of ", self._get_short_tag(element.getparent()), "instead", e[2]["within"])
-                                return None
-                        return {"attr": key_,
-                                "elem": e[0],
-                                "func": e[1],
-                                "param": e[2]
-                                }
-        return None
+                        else:
+                            list_.append( {"attr": key_,
+                                    "elem": e[0],
+                                    "func": e[1],
+                                    "param": e[2]
+                                    })
+        return list_
 
     
-    def _processor(self, ino: any, attr: str, element: any, function_: str, params: dict, *args, **kwargs) -> any:
+    def _processor(self, ino: any, attr: str, element: any, function_: str, param: dict, *args, **kwargs) -> any:
         """Select a function to retrieve the information for a specific tag"""
+        #print("--+",element.tag, function_)
         if function_ == "_text":
-            return self._text(ino, attr, element, params)
+            return self._text(ino, attr, element, param)
         if function_ == "_attr":
-            return self._attr(ino, attr, element, params)
+            return self._attr(ino, attr, element, param)
         if function_ == "_up":
-            return self._up(ino, attr, element, params)
+            return self._up(ino, attr, element, param)
         return ino
     
     
-    def _attr(self, ino: any, attr: str, element: any, params: dict) -> None:
+    def _attr(self, ino: any, attr: str, element: any, param: dict) -> None:
         """Read an attribut from the given element"""
-        
-        if params["attr"] in element.attrib:
-            ino.set_attr(attr,element.attrib[params["attr"]],self.lang)
+        #print(attr,element.attrib,param)
+        if "attr" in param:
+            if param["attr"] in element.attrib.keys():
+                ino.set_attr(attr,element.attrib[param["attr"]],self.lang)
         return ino
     
-    def _up(self, ino: any, attr: str, element: any, params: dict)-> None:
-        pass
+    def _up(self, ino: any, attr: str, element: any, param: dict)-> None:
+        return ino
         
-        
-    def _text(self, ino: any, attr: str, element: any, params: dict)-> None:
+    def _text(self, ino: any, attr: str, element: any, param: dict)-> None:
         """Read texts from element and sub elements."""
-        #print("---",element.tag)
         element_text = self.so.strip_non_printable(element.text)
-        if "sub_tags" in params:
-            only = params["sub_tags"]
+        if "sub_tags" in param:
+            only = param["sub_tags"]
         else:
             only=[]
         children_ = (self._iterdesc(element=element,
@@ -192,8 +200,8 @@ class EAD3(xml_.XML_):
         if len(ino.FIELDS[attr].split(".")) == 2:
             obj_ = factory.Factory(ino.FIELDS[attr].split(".")[1],
                     children_, self.lang).get_product()
-            if "identifier" in params:
-                identifier = "|".join([element.attrib[x] for x in params["identifier"] if x in element.attrib])
+            if "identifier" in param:
+                identifier = "|".join([element.attrib[x] for x in param["identifier"] if x in element.attrib])
                 
                 obj_.set_attr("identifier", identifier)
                 ino.set_attr(attr, obj_)
@@ -210,7 +218,7 @@ class EAD3(xml_.XML_):
         """Rebuild the xpath of an element"""
         xpath=elem.tag
         list_ = anonym_path.split("/*")
-        print(list_)
+        #print(list_)
         xpath = xpath + list_[-1]
         for i in range(len(list_)-1,0,-1):
             elem = elem.getparent()
@@ -218,23 +226,6 @@ class EAD3(xml_.XML_):
                 xpath=elem.tag + list_[i-1]+"/" + xpath
         return xpath
 
-    def x_make_dates(self, dates_str_: str, element:any) -> dict:
-        """Create a dict with different date information"""
-
-        dates = dates_str_.replace("{dateset}","")
-        dates = dates.replace("{daterange}","")
-        dates = dates.replace("{fromdate}","")
-        dates = dates.replace("|","")
-        dates = dates.replace("{todate}","-")
-        dates = dates.replace("{datesingle}",", ")
-        dates = dates.replace(" ","")
-        dates = dates.strip(" ")
-        dates = dates.strip(",")
-        dates = dates.replace(",",", ")
-        return {"event_dates": dates,
-                "event_start_dates":"",
-                "event_end_dates":""
-                }
                 
     def _make_dates(self, dates_str_: str, element:any) -> dict:
         """Create a dict with different date information"""
@@ -245,9 +236,12 @@ class EAD3(xml_.XML_):
         for el in element.iterdescendants():
             tag_ = self._get_short_tag(el)
             if tag_ in self.date_mapping:
-                if "standarddate" in el.attrib:
-                    for e in self.date_mapping[tag_]["match"]:
-                        dict_[e] = el.attrib["standarddate"]
+                for attr in ["standarddate","normal"]:
+                    if attr in el.attrib:
+                        for e in self.date_mapping[tag_]["match"]:
+                            if dict_[e] == "":
+                                dict_[e] = el.attrib[attr]
+                        
                 if el.text.strip() != "":
                     dict_["event_dates"] += "<" + tag_ + ">" + self.so.strip_non_printable(el.text) + ""
                 else:
@@ -258,7 +252,9 @@ class EAD3(xml_.XML_):
             else:
                 break
         tag_ = self._get_short_tag(element)
-        if tag_ == "unitdatestructured":
+        if tag_ == "unitdatestructured" or tag_ == "unitdate":
+            if dict_["event_dates"] == "":
+                dict_["event_dates"] = element.text
             for e in self.date_mapping[tag_]["named_attr"]:
                 if e in element.attrib:
                     dict_["event_dates"] += "<" + e + ">" + element.attrib[e] + ""  

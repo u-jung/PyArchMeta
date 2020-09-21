@@ -113,7 +113,7 @@ class XML_():
             if tag_ in until:
                 break
             if tag_ not in self.ignore_tags:
-                str_+= "{" + tag_ + "} " 
+                str_+= " <" + tag_ + "> " 
             if text_ == "":
                 str_+= "|"
             else:

@@ -70,3 +70,16 @@ class OtherOps():
             else:
                 three_letter = "???"
         return (three_letter, two_letter)
+
+    def alter_lang_code(self, lang: str) -> str:
+        """Alter the given lang code into another (2 or 3 letter code)"""
+        if len(lang) == 3:
+            if lang in GlobalConst.ISO639:
+                return GlobalConst.ISO639[lang]
+        if len(lang) == 2:
+            if lang in GlobalConst.ISO639.values():
+                for key_, value_ in GlobalConst.ISO639:
+                    if value_ == lang:
+                        return key_
+        return lang                
+        

@@ -62,14 +62,14 @@ class Aggregation(list):
         return [x.to_json(lang = lang, with_none= with_none, fall_back= fall_back, simplify= simplify) for x in self.list_]
         
     
-    def to_csv(self):
+    def to_csv(self, lang: str = "*"):
         """Write to csv file"""
         with open('/tmp/names.csv', 'w', newline='') as csvfile:
             fieldnames = self.statistics()["attribute_frequencies"].keys()
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for e in self.list_:
-                writer.writerow(e.to_json(simplify=True, with_none=False,lang="en"))
+                writer.writerow(e.to_json(simplify=True, with_none=False,lang=lang))
 
           
     def statistics(self):

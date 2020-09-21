@@ -82,7 +82,9 @@ class MetaDataObject():
         """Give the object attributes as dictionary.
         
         Parameters:
-        lang – prefered language (all languages if lang = '')
+        lang – prefered language 
+                (all languages if lang = '')
+                (the prefered language if lang= '*')
         with_none – if True attributes with None values will be given
         fall_back – if True the value will give in the fall back language 
                     if there is no value in prefered language
@@ -90,7 +92,8 @@ class MetaDataObject():
                      in the preferend language. This depass with_none.
         """
         dict_ = {}
-        
+        if lang == "*":
+            lang = self._prefered_language()
         for key_,value_ in self.__dict__.items():
             #print (type(value_), key_, value_)
             if value_ is None:
@@ -106,6 +109,7 @@ class MetaDataObject():
                     else:
                         list_.append(e.to_json(lang,with_none, fall_back, simplify))
                 if simplify:
+                    #print(lang, self._prefered_language())
                     dict_[key_] = "|".join(list_)
                 else:
                     dict_[key_] = list_.copy()
@@ -146,6 +150,7 @@ class MetaDataObject():
                     else:
                         dict_[key_] = ddict_.copy()                        
         return dict_.copy()
+
 
             
     def default(self, lang: str= GlobalConst.LANGUAGES[0]):
@@ -239,7 +244,7 @@ class MetaDataObject():
         """BROKEN - Walk throught the object"""
         if isinstance(object_,InformationObject) and not isinstance(object_,str):
             object_ = self.__dict__
-            print("dict---")
+            #print("dict---")
         if hasattr(object_,"__iter__"):
             if isinstance(object_,list) or isinstance(object_,tuple):
                 for e in object_:
@@ -250,8 +255,23 @@ class MetaDataObject():
                     return self._walk(value_)
             
         else:
-            print ("-->",object_)
+            #print ("-->",object_)
             return 
+            
+    def _prefered_language(self):
+        """Return the prefered language of the MetaDataObject.
+        
+        This could be the language with the less number of None statements
+        else the fall back language (first of the language dict
+        """
+        dict_ = self.__dict__[self._main_attr()]
+        dict_ = {key_: value_ for key_,value_ in dict_.items() if value_ is not None}
+        #print(dict_, self.__class__.__name__)
+        if len(dict_.keys()) == 1:
+            return list(dict_.keys())[0]
+        else:
+            return GlobalConst.LANGUAGES[0]
+            
 
     def to_csv(self, path: str = "", lang: str = ""):
         """Give CSV-String"""

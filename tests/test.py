@@ -94,15 +94,15 @@ class AggregationTest(unittest.TestCase):
         #xml_obj = xml_.XMLImporter("ead3")
         print(dir(xml_importer))
         xml_obj = xml_importer.take("ead3")
-        result= xml_obj.load("ead3_multi_level_optimum.xml")
-        #result= xml_obj.load("NL-TbRAT-115_916_maximal.xml")
+        #result= xml_obj.load("ead3_multi_level_optimum.xml")
+        result= xml_obj.load("NL-TbRAT-115_916_maximal.xml")
         r=xml_obj.read()
         ioa = xml_obj.get_aggregations()[0]
         print("->>",result)
         ioa.to_csv()
         print(json.dumps(ioa.to_json(simplify=False, with_none=False ),indent=2))
         print ()
-        print (json.dumps(ioa[0].to_json(simplify=True, with_none=False,lang="en" ),indent=2))
+        print (json.dumps(ioa[0].to_json(simplify=True, with_none=False,lang="*" ),indent=2))
 
 
 class XMLTest(unittest.TestCase):
